@@ -11,4 +11,4 @@ Arguments:
 -h help
 
 Example: 
-./check_awshealth -s '"'Amazon API Gateway (N. California)'"' -c 3 -w 2"
+./check_awshealth -s "Amazon API Gateway (N. California)" -c 3 -w 2
