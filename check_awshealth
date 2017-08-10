@@ -1,0 +1,95 @@
+#!/bin/bash
+#--------
+# AWS Service Health Dashboard -- icinga2 notification
+# Require nothing but a bit of knowledge in icinga2
+# v.1.0 -- Takaki Matsumoto
+# https://github.com/mtakaking/icinga2_awsservicehealth
+# This checks on https://status.aws.amazon.com/
+
+#defining service status
+#1=Normal,2=Informational,3=Degration,4=Disruption
+
+#when doing loop for service name, it should use the first returned value only
+
+#curl -s 'https://aws.amazon.com'
+#-s for service NAME
+#-----returns the service name, status, and rss feed text
+#-c for critical state - 4
+#-w for warning state - 3
+#-h for help
+
+ while getopts ":s:c:w:h" optname ; do
+    case "$optname" in
+      "s")
+        #check whether this value is entered - SERVICE=required
+        SERV=$OPTARG
+        ;;
+      "c")
+        CRIT=$OPTARG
+        #default:4
+        ;;
+      "w")
+        WARN=$OPTARG
+        #default:3
+        ;;
+      "h")
+        echo -e "-s service name -- should be same as what's at https://status.aws.amazon.com \n -c critical state (default: 4) \n -w warning state (default: 3) \n -h help \n Example: ./check_awshealth -s '"'Amazon API Gateway (N. California)'"' -c 3 -w 2"
+        ;;
+      *)
+      # Should not occur
+        echo "Unknown error while processing options"
+        exit 1
+        ;;
+    esac
+  done
+
+#$CRIT should be higher than $WARN
+#$WARN should be lower than $CRIT
+
+declare -a status=("Service is operating normally" "Informational message" "Service degradation" "Service disruption")
+
+if [ -z "$CRIT" ]
+  then CRIT=4
+fi
+
+if [ -z "$WARN" ]
+  then let WARN=3
+fi
+
+
+#Copy an html file to plugins dir
+#Parse the HTML and returns the current status of the service
+awspath="/usr/lib64/nagios/plugins/check_aws.htm"
+curl -s https://status.aws.amazon.com > $awspath
+s2=$(cat $awspath | grep -A1 "$SERV" | grep -v "$SERV")
+s3=$(echo ${s2:48:48}) 
+s4=${s3%?????}
+
+echo "Current status can be found @ https://status.aws.amazon.com"
+echo "Service: "$SERV
+echo "Current Status: " $s4
+
+for i in $statusHTML
+  do
+    if [$status[@] -e "$s4"]
+      then
+        #number of the array value should be same as service status
+        [@]=$serviceLevel
+    fi
+done
+
+echo $serviceLevel
+
+if [ $serviceLevel -e $CRIT ]
+   then
+     echo "CRITICAL --" $s4
+ elif [ $serviceLevel -e $WARN ]
+   then
+     echo "WARNING --" $s4
+ else 
+   echo $s4
+fi
+
+rm -f $awspath
+
+exit
