@@ -1,0 +1,15 @@
+object CheckCommand “check_awshealth” {
+  import “generic-host”
+  command = [ PluginDir + "/check_check_awshealth” ]
+
+  arguments = {
+
+    “-s” = {
+	value = “$ARG1$”
+	description = “AWS Service Name (Region)”
+	required = true
+       }
+    “-c” = “$ARG2$”
+    “-w” = “$ARG3$”
+  }
+}
